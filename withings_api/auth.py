@@ -73,7 +73,7 @@ def create_local_client() -> str | None:
     </head>
     <body>You can now close this tab...
         <script type='text/javascript'>
-                window.opener && window.opener.location.reload(true);
+                window.opener?.location.reload(true);
                 window.close();
         </script>
     </body>
@@ -89,6 +89,19 @@ def create_local_client() -> str | None:
                     target=tmp_server.shutdown, daemon=True
                 )
                 server_closer.start()
+
+        def do_POST(self):
+            path = urllib.parse.urlsplit(self.path)
+            if path.netloc not in ("/notify"):
+                self.send_error(404)
+                return
+            data = dict(
+                [
+                    line.decode().split("=", maxsplit=1)
+                    for line in self.rfile.readlines()
+                ]
+            )  # type: ignore
+            logger.info(f"Received notification: {data}")
 
     tmp_server = server.HTTPServer((address, int(port)), AuthClient)
     tmp_server.serve_forever()
@@ -144,7 +157,8 @@ def _save_response(
     request_start_time = context.get()["request_started_at"]
     response.raise_for_status()
     data = response.json()["body"]
-
+    if "access_token" not in data:
+        raise RuntimeError("Data does not contain an access token")
     with open(save_location, "w") as fp:
         json.dump({**data, "request_start_time": request_start_time}, fp, default=str)
     response_body = Oauth2GetaccesstokenResponse200Body.from_dict(data)

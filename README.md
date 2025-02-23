@@ -15,8 +15,8 @@ today = datetime.datetime.now().date()
 start = datetime.datetime(today.year, today.month, today.day)
 end = start + datetime.timedelta(days=1)
 
-w = withings.Withings.from_local()
-m = w.wrap(measure_getmeas)(
+w = withings.create_local_api_wrapper()
+m = w(measure_getmeas)(
     action="getmeas",
     meastype=1,
     meastypes="1,5,8,76,77,88",
